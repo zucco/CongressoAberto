@@ -22,6 +22,8 @@ function handleQueryResponse(response) {
   options['pageSize'] = 20;
   options['pagingButtonsConfiguration'] = 'auto';
   options['allowHtml'] = true;
+  var map = new google.visualization.TablePatternFormat('<img src="/php/timthumb.php?src=/images/partymaps/{0}map.png&w=80&h=0&zc=0&q=90">');
+  map.format(data, [2]);
   var view = new google.visualization.DataView(data);
   view.hideColumns([1]);
   visualization = new google.visualization.Table(document.getElementById('table1'));
@@ -35,3 +37,5 @@ google.setOnLoadCallback(drawVisualization);
 <explain> Somente partidos com mais de cinco legisladores </explain>
 <div id="table1">
 </div>
+<p> Observação: Não levamos em consideração ausencias justificadas ou licensas médicas. </p>
+

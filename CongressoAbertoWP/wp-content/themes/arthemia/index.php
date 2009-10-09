@@ -28,15 +28,14 @@ alt="<?php the_title(); ?>" class="left"  border=0  /></a>
 <!--	<img src="<?php echo get_option('home'); ?>/wp-content/themes/arthemia/images/featured.png" width="72px" height="17px" alt="" /> -->
 
 	<?php query_posts("showposts=3&category_name=Featured"); $i = 1; ?>
-
-		
+		<div class="title"> O Governo perdeu </div>
       	<?php while (have_posts()) : the_post(); ?>
 	<div class="clearfloat">
 	<?php $values = get_post_custom_values("Image");
 	if (isset($values[0])) { ?>
       <a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php the_title(); ?>">
 	<img src="/php/timthumb.php?src=/<?php
-$values = get_post_custom_values("Image"); echo $values[0]; ?>&w=100&zc=0&q=100"
+$values = get_post_custom_values("Image"); echo $values[0]; ?>&w=120&zc=0&q=100"
 alt="<?php the_title(); ?>" class="left" width="100px" height="100px"  /></a>
       <?php } ?>
 	<div class="info"><a href="<?php the_permalink() ?>" rel="bookmark" class="title"><?php the_title(); ?></a>
@@ -96,8 +95,8 @@ alt="<?php the_title(); ?>" class="left" width="100px" height="100px"  /></a>
 	if (isset($values[0])) { ?>
       <a href="<?php the_permalink() ?>" rel="bookmark" title="Permanent Link to <?php the_title(); ?>">
 	<img src="/php/timthumb.php?src=/<?php
-$values = get_post_custom_values("Image"); echo $values[0]; ?>&w=100&h=0&zc=0&q=100"
-alt="<?php the_title(); ?>" class="left" width="100px"   /></a>
+$values = get_post_custom_values("Image"); echo $values[0]; ?>&w=120&h=0&zc=0&q=100"
+alt="<?php the_title(); ?>" class="left" width="120px"   /></a>
       <?php } ?>
 	<?php the_excerpt(); ?>
 	</div>

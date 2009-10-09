@@ -5,17 +5,17 @@ rf <- function(x=NULL) {
     run.from <- "~/reps/CongressoAberto"
   }
   ## side effect: load functions
-  source(paste(run.from,"/R/caFunctions.R",sep=""),encoding="utf8")
+  source(paste(run.from,"/R/caFunctions.R",sep=""))
   if (is.null(x)) {
     run.from
   } else {
     paste(run.from,"/",x,sep='')
-s  }
+  }
 }
 usource(rf("R/mergeApprox.R"))
 run.from <- rf()
 
-dnow <- read.csv(rf("data/camara/Deputados95-99_Camara.csv"),encoding="utf8")[,c(1,4,6,7)]
+dnow <- read.csv(rf("data/camara/Deputados95-99_Camara.csv"))[,c(1,4,6,7)]
 
 names(dnow) <- c("name","state","beg","end")
 dnow$beg <- as.Date(as.character(dnow$beg),format="%m/%d/%Y")

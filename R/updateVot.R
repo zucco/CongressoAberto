@@ -10,7 +10,7 @@ rf <- function(x=NULL) {
     run.from <- "~/reps/CongressoAberto"
   }
   ## side effect: load functions
-  source(paste(run.from,"/R/caFunctions.R",sep=""),encoding="utf8")
+  source(paste(run.from,"/R/caFunctions.R",sep=""))
   if (is.null(x)) {
     run.from
   } else {
@@ -55,11 +55,11 @@ if(length(SFfiles)>0){file.remove(SFfiles)} #Get rid of SENADO files, if they ex
 old.LVfiles <- grep("LV",dir("extracted"),value=TRUE)  #get already coded votes
 ##Download current months's zip
 for (i in zip.files) {
-  the.url <- paste("http://www.camara.gov.br/internet/plenario/result/votacao/",i,".zip",sep="")
-  ## this only downloads if file was updated
-  if(download.now) {
-    tmp <- system(paste("wget -Nc -P . ",the.url))
-  }
+    the.url <- paste("http://www.camara.gov.br/internet/plenario/result/votacao/",i,".zip",sep="")
+    ## this only downloads if file was updated
+    if(download.now) {
+        tmp <- system(paste("wget -Nc -P . ",the.url))
+    }
 }
 
 ##Unzip zip files
@@ -102,7 +102,7 @@ if (length(votes)>0) {
         ## load twitter user passwd
         source(rf("R/twitter.R"))
         load(rf("R/up.RData"))
-        tw <- paste(nvotes,"new rollcalls uploaded!")
+        tw <- paste(nvotes,"novas votações!")
         ns <- tweet(tw, userpwd=usrpwd, wait=0)
     }
     print(paste(nvotes, "effectively updated"))
@@ -110,3 +110,4 @@ if (length(votes)>0) {
 
 ##print(ns)
 warnings()
+print(Sys.time())

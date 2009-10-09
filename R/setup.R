@@ -7,7 +7,7 @@ rf <- function(x=NULL) {
     run.from <- "~/reps/CongressoAberto"
   }
   ## side effect: load functions
-  source(paste(run.from,"/R/caFunctions.R",sep=""),encoding="utf8")
+  source(paste(run.from,"/R/caFunctions.R",sep=""))
   if (is.null(x)) {
     run.from
   } else {
@@ -56,9 +56,9 @@ usource("wnomLastYear.R", echo=TRUE)
 
 
 ## post legislators main page
-usource("legisListWordPress.R", echo=TRUE)
+usource(rf("R/legisListWordPress.R"), echo=TRUE)
 ##post legislators
-usource("legisWordPress.R", echo=TRUE)
+usource(rf("R/legisWordPress.R"), echo=TRUE)
 ##post bills
 usource("billsWordPress.R", echo=TRUE)
 ## post about us (quem somos) page
@@ -67,8 +67,10 @@ usource("aboutusWordPress.R")
 usource("partiesWordPress.R")
 ## post plio
 usource("plioWordPress.R")
+
+
 ## indices camara (also posts main page "desempenho")
-usource("indicesCamara.R")
+usource(rf("R/indicesCamara.R"))
 
 usource("abstentionsWordpress.R")
 

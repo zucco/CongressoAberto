@@ -1,8 +1,14 @@
+options(stringsAsFactors=FALSE)
+##options(encoding="utf8")
 ##FIX: dbWriteTable , append=TRUE does NOT update the table
 ## possible solutions
 ## delete table before hand
 ##UPDATE summary AS t, (query) AS q SET t.C=q.E, t.D=q.F WHERE t.X=q.X
 ## use dbInsert (in wordpress.R)
+
+is.windows <- function() {
+  (.Platform$OS.type!="unix")
+}
 
 theme_mini <- function() {
   structure(list(axis.ticks.margin = unit(c(-1), "lines"), plot.margin = unit(c(0, 0, 0, 0), "lines"), panel.margin = unit(0, "lines"), axis.title.y = theme_blank(), axis.text.x=theme_blank(), axis.text.y=theme_blank(), axis.ticks=theme_blank()), class="options") 
@@ -22,9 +28,14 @@ capwords <- function(s, strict = TRUE) {
 
 tmptable <- function() paste("t",paste(sample(c(letters,0:9),10,replace=TRUE), collapse=""),sep='')
 
-usource <- function(...) source(...,encoding="utf8")
+usource <- function(...) {
+    if (is.windows()) {
+        source(..., encoding="utf8")
+    } else {
+        source(...)
+    }
+}
 
-options(stringsAsFactors=FALSE)
 
 ## save the files directly to web path on server
 webdir <- function(x=NULL) {
@@ -36,26 +47,6 @@ webdir <- function(x=NULL) {
 imagesync <- function() {
     system("rsync  --stats --recursive -u --chmod=o+r  ~/reps/CongressoAberto/images/  /var/www/images/.")
 }
-
-run <- FALSE
-if (run) {
-  ## paths (put on the beg of R scripts)
-    rf <- function(x=NULL) {
-        if (.Platform$OS.type!="unix") {
-            run.from <- "C:/reps/CongressoAberto"
-        } else {
-            run.from <- "~/reps/CongressoAberto"
-        }
-        ## side effect: load functions
-        source(paste(run.from,"/R/caFunctions.R",sep=""),encoding="utf8")
-    if (is.null(x)) {
-        run.from
-    } else {
-        paste(run.from,"/",x,sep='')
-    }
-    }
-}
-
 
 
 
@@ -213,13 +204,13 @@ firstlast <- function(x) {
 
 
 ##convert character vectors from a df from latin1
-iconv.df <- function(df,encoding="windows-1252") {
+iconv.df <- function(df,from="windows-1252", to= getOption("encoding")) {
   cv <- try(which(sapply(df,is.character)),silent=TRUE)
   if (!"try-error" %in% class(cv)) {
-    for (i in cv) df[,i] <- iconv(df[,i],from=encoding)
+    for (i in cv) df[,i] <- iconv(df[,i],from=from, to=to)
     fv <- which(sapply(df,is.factor))
     for (i in fv) {
-      levels(df[,i]) <- iconv(levels(df[,i]),from=encoding)    
+      levels(df[,i]) <- iconv(levels(df[,i]),from=from, to=to)    
     }
   }
   df
@@ -323,18 +314,27 @@ diffyear <- function(x,y) {
     y.date <- as.Date(paste("2008-",substr(as.Date(y),6,10)))
     (y.year-x.year)-((x.date>y.date))    
 }
-  
+
+read.fix <- function(file, encoding="latin1", ...) {
+    ff <- file(file)
+    tmp <- readLines(ff, encoding=encoding)
+    writeLines(tmp, "tmp")
+    LV <- read.fwf("tmp" , ...)
+    unlink("tmp")
+    closeAllConnections()
+    LV
+}
+
 readOne <- function(LVfile,post=FALSE) {
-    ##FIX: really need the following line? does it crash other things?
-    options(encoding="ISO8859-1")
+    ## options(encoding="ISO8859-1")
     HEfile <- gsub("^LV","HE",LVfile)
     ##Read data from VOTE LIST file for the vote
     ##if(nchar(vote)==24){ #formato antigo: titulo tinha 24 characters, no novo so 21
     ##Fixed the following line (I think)
     if(nchar(LVfile)==24)  { #formato antigo: titulo tinha 24 characters, no novo so 21
-        LV <- read.fwf(LVfile, widths=c(9,-1,9,40,10,10,25,4),strip.white=TRUE)
+        LV <- read.fix(LVfile, widths=c(9,-1,9,40,10,10,25,4),strip.white=TRUE)
     }  else {
-        LV <- read.fwf(LVfile, widths=c(9,-1,6,40,10,10,25,4),strip.white=TRUE)
+        LV <- read.fix(LVfile, widths=c(9,-1,6,40,10,10,25,4),strip.white=TRUE,encoding="latin1")
     }
     voteid <- LV$V2[1]  #store number of vote for future use
     names(LV) <- c("session","rcvoteid","namelegis",paste("vote",voteid,sep="."),"party","state","id") #rename fields
@@ -343,9 +343,9 @@ readOne <- function(LVfile,post=FALSE) {
     LV$state <- toupper(state.l2a(LV$state))
     LV$state <- factor(LV$state,levels=toupper(states))
     LV <- LV[,c("id","namelegis","party","state",paste("vote",voteid,sep="."))] #rearrange fields
-    vt.date<-as.Date(as.character(read.table(HEfile, header = FALSE, nrows = 1,skip = 2, strip.white = TRUE, as.is = TRUE)[1,1]), "%d/%m/%Y")
-    vt.descrip<-read.table(HEfile, header = FALSE, nrows = 1,skip = 12, strip.white = TRUE, as.is = TRUE, sep=";",quote="")
-    vt.session<-read.table(HEfile, header = FALSE, nrows = 1,skip = 0, strip.white = TRUE, as.is = TRUE)[1,1]
+    vt.date<-as.Date(as.character(read.table(HEfile, header = FALSE, nrows = 1,skip = 2, strip.white = TRUE, as.is = TRUE, encoding="latin1")[1,1]), "%d/%m/%Y")
+    vt.descrip<-read.table(HEfile, header = FALSE, nrows = 1,skip = 12, strip.white = TRUE, as.is = TRUE, sep=";",quote="",encoding="latin1")
+    vt.session<-read.table(HEfile, header = FALSE, nrows = 1,skip = 0, strip.white = TRUE, as.is = TRUE, encoding="latin1")[1,1]
     vt.descrip<-gsub("\"","",vt.descrip)    #get rid of quotes in the description of the bill
     HE <- data.frame(rcvoteid=voteid,rcdate=vt.date,session=vt.session,billtext=vt.descrip)  
     data.votacoes <- get.votacoes(HE)
@@ -393,7 +393,7 @@ readOne <- function(LVfile,post=FALSE) {
                 print(res[with(res,bioid%in%bioid[which(duplicated(bioid))]),])
                 stop("Some ids are duplicated ")
             }
-      res
+            res
         }
         if (nrow(tomatch)>0) {
             ##browser()
@@ -480,7 +480,7 @@ connect.mysql <- function(connection,group) {
   if (.Platform$OS.type!="unix") {
     defaultfile <- "C:/my.cnf"
 } else {
-    defaultfile <- "~/.my.cnf"
+    defaultfile <- path.expand("~/.my.cnf")
   }
   new <- TRUE
   library(RMySQL)  
@@ -829,40 +829,41 @@ manfix <- function(id,newstate) {
 
 
 map.rc <- function(rc, filenow='',title='', large=TRUE, percent=FALSE) {
-  if (percent) {
-    pct <- 100
-    legend.title <- "Votando a favor da proposição (%)"    
-  } else {
-    pct <- 1
-    legend.title <- "Proporção votando a favor da proposição"    
-  }
-  rc$rc <- car::recode(rc$rc, "'Obstrução'='Não'")
+    m1 <- readShape(rf("data/maps/BRASIL.shp"))
+    if (percent) {
+        pct <- 100
+        legend.title <- "Votando a favor da proposição (%)"    
+    } else {
+        pct <- 1
+        legend.title <- "Proporção votando a favor da proposição"    
+    }
+    rc$rc <- car::recode(rc$rc, "'Obstrução'='Não'")
   rc <- subset(rc, rc%in%c("Sim", "Não"))
-  rc$rc2 <- rc$rc=="Sim"
-  tmp <- recast(rc,state~variable,measure.var="rc2",fun.aggregate=function(x) c(n=length(x),p=pct*sum(x)/length(x)))
-  tmp$UF <- tmp$state
-  m2 <- merge.sp(m1,tmp,by="UF")
-  par(bg="grey90")
-  n1 <- 4
-  seqx <- c(0,.15,.3,.45,.55,.70,.85,1)*pct
-  col.vec <- c(rev(brewer.pal(n1,"Reds")[-1]),"grey95",brewer.pal(n1,"Blues")[-1])
-  ##pdf(file=paste(fname,"small.pdf",sep=""),height=6,width=6)
-  ##par(mai=c(0,0,0,0))
-  ##plot.heat(m2,NULL,"concpt_p",title="Proporção votando\njunto com o PT",breaks=seqx,reverse=FALSE,cex.legend=1,bw=1,col.vec=col.vec,plot.legend=FALSE)
-  ##dev.off()
-  ##   pdf(file=paste(fname,".pdf",sep=""),height=6,width=6)
-  if (large) {
-    par(mai=c(0,0,0.6,0))
-    plot.heat(m2,NULL,"rc2_p",title=legend.title,breaks=seqx,reverse=FALSE,cex.legend=1,bw=1,col.vec=col.vec,main=filenow)
-    with(m2@data,text(x,y,UF,cex=0.8),col="grey30")
-    mtext(title,3, cex=.9)
-  } else {
-    par(mai=c(0,0,0,0))
-    plot.heat(m2,NULL,"rc2_p",breaks=seqx,reverse=FALSE,cex.legend=1,bw=1,col.vec=col.vec,main=filenow,plot.legend=FALSE)
-    ##with(m2@data,text(x,y,UF,cex=0.8),col="grey30")
-    mtext(title,3, cex=.9)
-  }
-  ##   dev.off()
+    rc$rc2 <- rc$rc=="Sim"
+    tmp <- recast(rc,state~variable,measure.var="rc2",fun.aggregate=function(x) c(n=length(x),p=pct*sum(x)/length(x)))
+    tmp$UF <- tmp$state
+    m2 <- merge.sp(m1,tmp,by="UF")
+    par(bg="grey90")
+    n1 <- 4
+    seqx <- c(0,.15,.3,.45,.55,.70,.85,1)*pct
+    col.vec <- c(rev(brewer.pal(n1,"Reds")[-1]),"grey95",brewer.pal(n1,"Blues")[-1])
+    ##pdf(file=paste(fname,"small.pdf",sep=""),height=6,width=6)
+    ##par(mai=c(0,0,0,0))
+    ##plot.heat(m2,NULL,"concpt_p",title="Proporção votando\njunto com o PT",breaks=seqx,reverse=FALSE,cex.legend=1,bw=1,col.vec=col.vec,plot.legend=FALSE)
+    ##dev.off()
+    ##   pdf(file=paste(fname,".pdf",sep=""),height=6,width=6)
+    if (large) {
+        par(mai=c(0,0,0.6,0))
+        plot.heat(m2,NULL,"rc2_p",title=legend.title,breaks=seqx,reverse=FALSE,cex.legend=1,bw=1,col.vec=col.vec,main=filenow)
+        with(m2@data,text(x,y,UF,cex=0.8),col="grey30")
+        mtext(title,3, cex=.9)
+    } else {
+        par(mai=c(0,0,0,0))
+        plot.heat(m2,NULL,"rc2_p",breaks=seqx,reverse=FALSE,cex.legend=1,bw=1,col.vec=col.vec,main=filenow,plot.legend=FALSE)
+        ##with(m2@data,text(x,y,UF,cex=0.8),col="grey30")
+        mtext(title,3, cex=.9)
+    }
+    ##   dev.off()
 }
 
 
@@ -870,7 +871,7 @@ barplot.rc.simple <- function(rc, gov=NA, title="", threshold=NULL) {
     require(RColorBrewer)
     require(ggplot2)
     rc <- subset(rc, rc%in%c("Sim", "Não"))
-    rc$rc <- factor(rc$rc)
+    rc$rc <- factor(rc$rc, levels=c("Não","Sim"))
     if (is.na(gov)) {
         colvec <- rep("transparent",2)
     } else {
@@ -1028,6 +1029,7 @@ plot.heat <- function(tmp,state.map,z,title=NULL,breaks=NULL,reverse=FALSE,cex.l
 }
 
 
+##FIX: these functions are here and in spatial.R choose 1.
 ##read file and get centroids
 readShape.cent <- function(shape.file="~/test.shp",IDvar="NOMEMESO") {
   require(maptools)
@@ -1042,6 +1044,18 @@ readShape.cent <- function(shape.file="~/test.shp",IDvar="NOMEMESO") {
   tmp@data$y <- tmp.c[tm,2]
   tmp
 }
+
+## use labels locations located inside the spatial object
+readShape <- function(shape.file="~/test.shp") {
+    require(maptools)
+    map <- readShapePoly(shape.file)
+    labelpos <- data.frame(do.call(rbind, lapply(map@polygons, function(x) x@labpt)))
+    names(labelpos) <- c("x","y")                        
+    map@data <- data.frame(map@data, labelpos)
+    map
+}
+
+
 
 
 ##merge sp objects with data
@@ -1148,28 +1162,32 @@ getLeaders <- function(x) {    #x is a string with the name of the vote.file (.t
   ## readLines directly chokes when the page is missing an end of file code
   down <- try(download.file(the.url,tfile))
   raw.data <-try(readLines(tfile,500),silent=TRUE)
-  if(any(grepl("Ã£o",raw.data))) {
+  if(!any(grepl("ORDINÁRIA",raw.data))) {
       ## fix encoding
       raw.data <-try(readLines(tfile,500,encoding="latin1"),silent=TRUE)
   }
+  if(!any(grepl("ORDINÁRIA",raw.data))) {
+      stop("encoding problems")
+  }
   if(class(raw.data)=="try-error") {
-    print(the.url)
-    cat("Connection problems",vote.name,"Will try again soon\n")
-    Sys.sleep(10)
-    cat("\t Attempting to connect...\n")
-    flush.console()
-    down <- try(download.file(the.url,tfile))
+      print(the.url)
+      cat("Connection problems",vote.name,"Will try again soon\n")
+      Sys.sleep(10)
+      cat("\t Attempting to connect...\n")
+      flush.console()
+      down <- try(download.file(the.url,tfile))
     raw.data <-try(readLines(tfile,500),silent=TRUE)
-    if(class(raw.data)=="try-error") {
-        warning("\t No data for",vote.name,"\n")
-        return(NULL)
-    }
-}
+      if(class(raw.data)=="try-error") {
+          warning("\t No data for",vote.name,"\n")
+          return(NULL)
+      }
+  }
   orientation.line <- grep("Orientação",raw.data)
   ##Check for encoding problems here  
   if(length(orientation.line)==0){
-      browser()
+      cat("############################\n")
       cat("No data for",vote.name,"\n")
+      cat("############################\n")
       flush.console()
       return(NULL)
   } #No leadership votes
@@ -1276,78 +1294,77 @@ decode.html <- function(x) {
 }
 
 
-
-
-
-mosaic.rc <- function(rc, pmedians) {
-  require(ggplot2)
-  require(RColorBrewer)
-  require(reshape)
-  rc1 <- merge(pmedians, rc,  by.y="party", by.x="Partido", all.y=TRUE)
-  rc1$Partido[is.na(rc1$coord1D)] <- "Outros partidos"
-  rc1$Partido <- factor(rc1$Partido,levels=pmedians$Partido)
-  ## order by size
-  ##rc1$Partido <- reorder(rc1$Partido,ave(rc1$legis,rc1$Partido,FUN=length))
-  rc1$ct <- 1
-  lrc <- (c("Sim","Não","Obstrução","Abstenção","Ausente"))
-  rc1$Voto <- factor(rc1$rc,levels=rev(lrc))
-  ##m1 <- readShape.cent("~/reps/CongressoAberto/data/maps/BRASIL.shp","UF")
-  rcc <- recast(rc1,Partido~Voto,measure.var="ct",margins="grand_col")
-  rcc <- rcc[order(rcc$Partido),]
-  rcc$xmax <- cumsum(rcc$`(all)`)
-  rcc$xmin <- with(rcc,xmax-`(all)`)
-  rcc$`(all)` <- NULL
-  rcc <- data.frame(rcc)
-  ## melt data
-  dfm <- melt(rcc,id=c("Partido", "xmin","xmax"))
-  ## calculate ymin and ymax
-  dfm$variable <- factor(dfm$variable,levels=(lrc))
-  dfm <- dfm[order(dfm$Partido,dfm$variable),]
-  dfm1 <- ddply(dfm,.(Partido),transform,ymax=cumsum(value/sum(value)))
-  dfm1 <- ddply(dfm1,.(Partido),transform,ymin=ymax-value/sum(value))
-  ##Position of text
-  dfm1$xtext <- with(dfm1, xmin + (xmax-xmin)/2)
-  ##dfm1$xtext <- with(dfm1, xmin)
-  dfm1$ytext <- with(dfm1, ymin + (ymax-ymin)/2)
-  ## Partido sizes
-  dfm1$Partidosize <- with(dfm1,xmax-xmin)
-  ## text only for large Partido size
-  dfm1$valuet <- with(dfm1,ifelse((Partidosize>(.02*513)) & (value>0),round(value),""))
-  dfm1$Partidot <- with(dfm1,ifelse(Partidosize>(.02*513),as.character(Partido),""))
-  dfm1$variable <- factor(dfm1$variable,levels=rev(lrc))
-  p <- ggplot(dfm1, aes(ymin=ymin, ymax=ymax, xmin=xmin, xmax=xmax, fill=variable))
-  ##Use grey border to distinguish between the Partidos
-  p <- p + geom_rect(colour="gray70")
-## Formatting adjustments
-  p <- p + theme_bw() + labs(x=NULL, y=NULL, fill=NULL) +
-    opts(##legend.position="none",
-         panel.border=theme_blank(),
-         panel.grid.major=theme_line(colour=NA),axis.text.x=theme_blank(),axis.text.y=theme_blank(),axis.ticks=theme_blank(),
-         panel.grid.minor=theme_line(colour=NA))+
-           coord_equal(ratio=1/508)+
-             scale_fill_manual(values=rev(c(
-                               alpha(brewer.pal(3,"Blues")[3],.8),
-                                 ##"grey20",
-                               alpha(rev(brewer.pal(4,"Reds")[1:4]), .8))
-                                 ##gray(c(.4,.6,.7,.9)))
-                                 ))
-  ## party labels
-  textdf <- unique(dfm1[,c("xtext","Partidot")])
-  ##browser()
-  ## small (no legends, party names inside plot)
-  ## name just the large parties
-  tx <- table(rc$party)>30
-  lp <- names(tx)[tx]
-  print(lp)
-  textdfsmall <- textdf[textdf$Partidot%in%lp,]
-  psmall <- p + annotate("text",x=textdfsmall$xtext, y=.1, label=paste(textdfsmall$Partidot),size=8, angle=45,just="left")
-  psmall <- psmall + opts(plot.margin = unit(c(0, 0, 0, 0), "lines"), legend.position = "none") + theme_mini()
-  ## large
-  ## Add text labels. Ifelse used for Partido A labels.
-  plarge <- p + geom_text(aes(x=xtext , y=ytext, label=valuet),size=4)
-  ## Add Partido labels.
-  plarge <- plarge + annotate("text",x=textdf$xtext, y=1.05, label=paste(textdf$Partidot),size=3.5, angle=75,just="right")
-  list(small=psmall, large=plarge)
+mosaic.rc <- function(rc, ...) {
+    pmedians <- dbGetQueryU(connect, "select * from br_partymedians where finaldate=(select max(finaldate) from br_partymedians) ")
+    pmedians <- pmedians[order(pmedians$coord1D),]
+    require(ggplot2)
+    require(RColorBrewer)
+    require(reshape)
+    rc1 <- merge(pmedians, rc,  by.y="party", by.x="Partido", all.y=TRUE)
+    rc1$Partido[is.na(rc1$coord1D)] <- "Outros partidos"
+    rc1$Partido <- factor(rc1$Partido,levels=pmedians$Partido)
+    ## order by size
+    ##rc1$Partido <- reorder(rc1$Partido,ave(rc1$legis,rc1$Partido,FUN=length))
+    rc1$ct <- 1
+    lrc <- (c("Sim","Não","Obstrução","Abstenção","Ausente"))
+    rc1$Voto <- factor(rc1$rc,levels=rev(lrc))
+    ##m1 <- readShape.cent("~/reps/CongressoAberto/data/maps/BRASIL.shp","UF")
+    rcc <- recast(rc1,Partido~Voto,measure.var="ct",margins="grand_col")
+    rcc <- rcc[order(rcc$Partido),]
+    rcc$xmax <- cumsum(rcc$`(all)`)
+    rcc$xmin <- with(rcc,xmax-`(all)`)
+    rcc$`(all)` <- NULL
+    rcc <- data.frame(rcc)
+    ## melt data
+    dfm <- melt(rcc,id=c("Partido", "xmin","xmax"))
+    ## calculate ymin and ymax
+    dfm$variable <- factor(dfm$variable,levels=(lrc))
+    dfm <- dfm[order(dfm$Partido,dfm$variable),]
+    dfm1 <- ddply(dfm,.(Partido),transform,ymax=cumsum(value/sum(value)))
+    dfm1 <- ddply(dfm1,.(Partido),transform,ymin=ymax-value/sum(value))
+    ##Position of text
+    dfm1$xtext <- with(dfm1, xmin + (xmax-xmin)/2)
+    ##dfm1$xtext <- with(dfm1, xmin)
+    dfm1$ytext <- with(dfm1, ymin + (ymax-ymin)/2)
+    ## Partido sizes
+    dfm1$Partidosize <- with(dfm1,xmax-xmin)
+    ## text only for large Partido size
+    dfm1$valuet <- with(dfm1,ifelse((Partidosize>(.02*513)) & (value>0),round(value),""))
+    dfm1$Partidot <- with(dfm1,ifelse(Partidosize>(.02*513),as.character(Partido),""))
+    dfm1$variable <- factor(dfm1$variable,levels=rev(lrc))
+    p <- ggplot(dfm1, aes(ymin=ymin, ymax=ymax, xmin=xmin, xmax=xmax, fill=variable))
+    ##Use grey border to distinguish between the Partidos
+    p <- p + geom_rect(colour="gray70")
+    ## Formatting adjustments
+    p <- p + theme_bw() + labs(x=NULL, y=NULL, fill=NULL) +
+        opts(##legend.position="none",
+             panel.border=theme_blank(),
+             panel.grid.major=theme_line(colour=NA),axis.text.x=theme_blank(),axis.text.y=theme_blank(),axis.ticks=theme_blank(),
+             panel.grid.minor=theme_line(colour=NA))+
+                 coord_equal(ratio=1/508)+
+                     scale_fill_manual(values=rev(c(
+                                       alpha(brewer.pal(3,"Blues")[3],.8),
+                                       ##"grey20",
+                                       alpha(rev(brewer.pal(4,"Reds")[1:4]), .8))
+                                       ##gray(c(.4,.6,.7,.9)))
+                                       ))
+    ## party labels
+    textdf <- unique(dfm1[,c("xtext","Partidot")])
+    ##browser()
+    ## small (no legends, party names inside plot)
+    ## name just the large parties
+    tx <- table(rc$party)>30
+    lp <- names(tx)[tx]
+    print(lp)
+    textdfsmall <- textdf[textdf$Partidot%in%lp,]
+    psmall <- p + annotate("text",x=textdfsmall$xtext, y=.1, label=paste(textdfsmall$Partidot),size=8, angle=45,just="left")
+    psmall <- psmall + opts(plot.margin = unit(c(0, 0, 0, 0), "lines"), legend.position = "none") + theme_mini()
+    ## large
+    ## Add text labels. Ifelse used for Partido A labels.
+    plarge <- p + geom_text(aes(x=xtext , y=ytext, label=valuet),size=4)
+    ## Add Partido labels.
+    plarge <- plarge + annotate("text",x=textdf$xtext, y=1.05, label=paste(textdf$Partidot),size=3.5, angle=75,just="right")
+    list(small=psmall, large=plarge)
 }
 
 
@@ -1454,4 +1471,207 @@ map.elec <- function(the.data, filenow='',title='', large=TRUE, percent=FALSE) {
           dev.off()
         convert.png(file=paste(pty,"mapsmall.pdf",sep=""))
       }
+}
+
+
+getThresh <- function(rc, billtype, billdescription) {
+  Nao <-  sum(rc=="Não")
+  Sim <-  sum(rc=="Sim")
+  Abs <-  sum(rc=="Abstenção")
+  ## simple majority
+  smaj <- round((Nao+Sim)/2)
+  if (any(grepl("requerimento", billdescription, ignore.case=TRUE))) {
+      ## camara rules says that requerimento only needs a simple majority
+      ## with quorum
+      thresh <- smaj
+  }
+  if (billtype=="PEC") {
+      ## constitutional amendments need 3/5
+      thresh <- 308
+  } else if (billtype=="PLP") {
+      ## lei complementar need 1/2
+      thresh <- 257
+  } else {
+      ## else need simple majority
+      thresh <- smaj
+  }
+  ## But note, you still need a quorum.
+  ## So if e. g.
+  ## Sim=100
+  ## Nao=100
+  ## Abst, Obs, = 0
+  ## then
+  ## needed to complete the quorum: 257-(Sim+Nao+Abs)
+  ## thresh = Sim + max(0, 257-(Sim+Nao+Abs))
+  ## this is the "effective threshold" for _approving_ legislation
+  ## FIX: double check this
+  quorum <- Sim+Nao+Abs
+  if (quorum>256) thresh else thresh+256-quorum
+}
+
+
+govwins <- function(rcnow, rcgov, thresh) {
+  if (nrow(rcgov)==0) return(NA)
+  pro <- sum(rcnow$rc=="Sim")-thresh
+  if (rcgov$rc=="Sim") {
+    progov <- pro
+  } else  { ## FIX: is this doing it right for abstentions and the like?
+    progov <- -pro
+  } 
+  progov
+}
+
+
+
+govpos <- function(rcgov) {
+  if (nrow(rcgov)==0) return(NA)
+  res <- NA
+  ifelse(rcgov$rc=="Sim", "A Favor", "Contra")
+}
+
+sumroll <- function(rcnow, margin, rcgov) {
+  res <- NULL
+  ## FIX: what happens when there is less than 513 deputies?
+  quorum <- sum(rcnow$rc%in%c("Ausente", "Obstrução"))<257
+  if (!quorum) {
+      res <- c(res, "Não houve quorum.")
+  }
+  tx <- table(rcnow$rc)
+  ntx <- c("Sim", "Não", "Obstrução", "Abstenção",  "Ausente")
+  tx <- tx[ntx]
+  tx[is.na(tx)] <- 0
+  ntx <- c("Sim", "Não", "Obstrução", "Abstenção",  "Ausentes")
+  names(tx) <- ntx
+  res <- c(res,paste(names(tx)%+%": ",tx,collapse="; "))
+  if (tx["Sim"]==0 | tx["Não"]==0 ) {
+      res <- c(res, "A votação foi unânime. ")
+  } else {
+      if (!is.na(margin)) {
+          res <- c(res, paste("Posição do governo:",rcgov$rc, ". ", sep=''))
+          if (quorum) {
+              if (margin>0) {
+                  res <- c(res, "O governo venceu a votação.")
+              } else {
+                  res <- c(res, "O governo foi derrotado.")
+              }
+          }
+      } else {
+          res <- c(res, "Não houve indicação do governo.")
+      }
+  }
+  paste(paste("<p>", res, collapse="</p>"), "</p>", collapse=" ")
+}
+  
+postroll <- function(rcid=2797, saveplot=TRUE, post=TRUE) {
+  print(rcid)
+  rcs <- dbGetQueryU(connect, "select * from br_votacoes where rcvoteid="%+%rcid)
+  rcnow <- dbGetQueryU(connect, "select * from br_votos where rcvoteid="%+%rcid)
+  ## fix pfl
+  rcnow$party <- recode.party(rcnow$party)
+  ## FIX: what to do with abstentions, etc
+  rcgov <- dbGetQueryU(connect, "select * from br_leaders where block='GOV' and rc!='Liberado' and rcvoteid="%+%rcid)
+  fulltext <- paste(rcs,collapse="\n")
+  ## create post data
+  title <- rcs$billproc
+  name <- with(rcs,encode(paste(bill,rcvoteid,sep="-")))
+  content <- paste('<script language="php">$rcvoteid = ',rcs$rcvoteid,';include("php/rc.php");</script>')
+  date <- wptime(rcs$rcdate)
+  tagsname <- with(rcs,sapply(c(billtype,billyear),
+                              encode))
+  tagslug <- gsub("[-,.]+","_",tagsname)
+  tags <- data.frame(slug=tagslug,name=tagsname)
+  billtype <- toupper(rcs$billtype)
+  threshold <- getThresh(billtype=rcs$billtype,
+                         billdescription=rcs$billdescription,
+                         rc=rcnow$rc)
+  margin <- govwins(rcnow, rcgov, threshold)
+  post_excerpt <- sumroll(rcnow, margin, rcgov)
+  post_category <- data.frame(slug="votacoes",name="Votações")
+  img <- paste("images/rollcalls/bar",rcid, sep='')
+  if (!is.na(margin))  {
+    if (margin>0) {
+      post_category <- rbind(post_category, data.frame(slug="governo_venceu",name="Governo venceu"))
+    } else {
+      post_category <- rbind(post_category, data.frame(slug="governo_perdeu",name="Governo foi derrotado"))
+    }
+    if (margin<10) {
+      img <- paste("images/rollcalls/mosaic",rcid, sep='')
+      post_category <- rbind(post_category, data.frame(slug="Featured",name="Featured"))
+    }
+  } else {
+  }
+  ## write plots to disk
+  print.png.old <- function(plots, fn, crop=TRUE, small=5, large=6) {
+    fns <- rf(fn%+%"small.pdf")
+    fnl <- rf(fn%+%"large.pdf")
+    pdf(file=fns, bg="white", width=small, height=small)
+    print(plots[["small"]])
+    dev.off()
+    convert.png(fns, crop=crop)
+    pdf(file=fnl, bg="white", width=large, height=large)
+    print(plots[["large"]])
+    dev.off()
+    convert.png(fnl, crop=crop)
+  }
+  print.png <- function(plots, fn, crop=TRUE, small=5, large=6) {
+      ## crop does nothing
+      fns <- webdir(fn%+%"small.png")
+      fnl <- webdir(fn%+%"large.png")
+      png(file=fns, bg="white", width=small*100, height=small*100, res=200)
+      print(plots[["small"]])
+      dev.off()
+      png(file=fnl, bg="white", width=large*100, height=large*100, res=100)
+      print(plots[["large"]])
+      dev.off()
+  }
+  if (saveplot) {
+      barplots <- barplot.rc.simple(rcnow, govpos(rcgov), threshold=threshold)  
+      mosaicplots <- mosaic.rc(rcnow, pmedians)
+      print.png(barplots, paste("images/rollcalls/bar",rcid, sep=''), crop=FALSE, small=4)
+      print.png(mosaicplots, paste("images/rollcalls/mosaic",rcid, sep=''), small= 7, large = 7)
+      ## maps
+      ## small
+      ## large
+      fn <- paste("images/rollcalls/map",rcid, sep='')
+      fns <- webdir(fn%+%"small.png")
+      fnl <- webdir(fn%+%"large.png")
+      png(file=fns, width=400, height=400, bg="white")
+      map.rc(rcnow, large=FALSE, percent=TRUE)
+      dev.off()
+      png(file=fnl,  width=1000, height=1000, bg="white", res=160)
+      map.rc(rcnow, large=TRUE, percent=TRUE)
+      dev.off()
+      ##convert.png(fns, crop=TRUE)
+      ##convert.png(fnl, crop=TRUE)
+  }
+  if (post) {
+      postid <- wpAddByName(conwp,post_title=title,post_type="post",post_content=content,post_date=date$brasilia,post_date_gmt=date$gmt,fulltext=fulltext,post_excerpt=post_excerpt,post_category=post_category,
+                            custom_fields=data.frame(meta_key="Image",meta_value=img%+%"small.png"),
+                            post_name=name,tags=tags)
+      ##FIX: create table in mysql
+      dbWriteTableU(connect,"br_rcvoteidpostid",data.frame(postid,rcvoteid=rcs$rcvoteid),append=TRUE)
+    res <- c(rcid,postid)
+      print(res)
+      res
+  }
+}
+
+if (1==2) {
+  ## template - there is also a wpAddbyTitle
+  postid <- wpAddByTitle( ## usually better to add by name -- we (try) to use  unique names
+                        ## by "add by" we mean that the function searches for a post with matching names or title
+                        conwp, ## connection
+                        post_title="post title",
+                        post_type="page", ## can be page
+                        post_content="post content",
+                        ## dates have a special format. use the function wptime
+                        ##post_date,    ## only needed if back dating (e.g. for roll calls, we'd like the date to be the roll call date) - there is a special format.
+                        ##post_date_gmt=date$gmt,  ## not sure why there is two date fields, but whatever
+                        fulltext="full text", ## put in the full text field terms that you'd like the search function to use to  find this post
+                        post_excerpt=" excerpt", ## summary of the post. it is what is shown in the front page, or in the search results.
+                        post_category=data.frame(slug="category_slug",name="category name"), ## categories: can have multiple lines.
+                        custom_fields=data.frame(meta_key="Image",meta_value="small.png"), ## this is what is shown in the search results or in the front page you do not need to add the php thumbnail thing here, just the link                      
+                        post_name=  name <- encode("post name"), ## post name. needs to be "nice" (e.g. no accents, spaces, etc.). Use the encode function for this purpose 
+                        tags=data.frame(slug="tagslug",name="tags name") ## tag the post  format similar to categories and custom fields
+                        )  
 }

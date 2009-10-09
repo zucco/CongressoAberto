@@ -1,9 +1,5 @@
 <script language="php">
 include_once("server.php");
-//$host  = "mysql.cluelessresearch.com";
-//$con = mysql_connect($host,"monte","e123456");
-//$database = 'congressoaberto';
-//mysql_select_db($database, $con);
 
 $table = 'br_bio';
 ##$bioid = 96734;
@@ -19,6 +15,7 @@ round(c.cgov_prop*100),
 d.party,
 round(c.ausente_prop*100),
 d.mailaddress
+, a.biofile
 	FROM br_bio as a, br_bioidtse as b, 
 	br_legis_stats as c, 
 	br_deputados_current as d
@@ -41,6 +38,7 @@ $percprogov = $row[4];
 $party = $row[5];
 $percausente = $row[6];
 $email = $row[7];
+$url = $row[8];
 
 // $statelegis = $row[2]; FIX: make it not depend on row order (Call by name)
 echo '<table border="0">';
@@ -48,10 +46,11 @@ echo '<tr>';
 print("<td><img src=\"/php/timthumb.php?src=/images/bio/polaroid/foto".$bioid.".png&w=100&h=0&zc=0\" alt=\"$namelegis\" width=100/></td>");
 print("<td> 
 <p>$namelegis ($party/$state)<br>
+<a href=\"http://www.camara.gov.br/Internet/deputado/$url\"> Página do deputado no site na Câmara</a><br>
 Legislaturas: $legisserved <br>
 Vota com o governo: $percprogov% <br>
 Ausente: $percausente% <br>
-Email: <a href=\"mailto:$email\"> $email
+Email: <a href=\"mailto:$email\"> $email </a> <br>
 </p>
  </td></tr></table>");
 
@@ -86,14 +85,14 @@ function handleQueryResponse(response) {
   // Reformat our data.
   var rc = new google.visualization.TablePatternFormat('<a href="/?p={1}"> {0} </a>');
   formatter.format(data, 1);
-  rc.format(data, [4,3]);
+  rc.format(data, [6,5]);
   options['page'] = 'enable';
   options['pageSize'] = 10;
   //options['pagingSymbols'] = {prev: 'P', next: 'N'};
   options['pagingButtonsConfiguration'] = 'auto';
   options['allowHtml'] = true;
   var view = new google.visualization.DataView(data);
-  view.hideColumns([3]);
+  view.hideColumns([5]);
   visualization = new google.visualization.Table(document.getElementById('table2'));
   visualization.draw(view, options);
 }

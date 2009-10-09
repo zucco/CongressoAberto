@@ -1,27 +1,72 @@
 Congresso Aberto
 
-
+* Data
+** table with common names "e.g. reforma politica; or pec dos cartorios"
+http://spreadsheets.google.com/ccc?key=0AmbpsKXCxWvFdHN5aThFQmx4WHNvaFhOTkY5bVA5X0E&hl=en
 * Code
+** Donations
+*** tables summarizing by donor
+*** total, $ per vote and rank in the state
+** Elections
+*** upload round 2 to db
 ** roll calls 
-*** mark a roll call result as unanimous
+*** DONE mark a roll call result as unanimous
+*** DONE unanimous roll calls are also creating problems for graphs
+*** in roll call tables (by proposition) put a column with results (aprovado, rejeitado, nao houve quorum.)
+*** TODO table for each roll call, with filtering by party and or state 
 ** 10 mais
-*** add  % absent
-*** add links
+*** DONE add  % absent
+*** DONE add links
 ** Presença em plenário
-*** add explanation
+*** DONE add explanation
 *** possibly combine with numero de votacoes
 ** Deputados
-*** explain the denominator. Perhaps add the percentages.
-*** interactive maps
+*** TODO explain the denominator. Perhaps add the percentages.
+*** TODO interactive maps
+*** TODO Party affiliations in dep page
+*** TODO verify if follow party and follow gov takes into account "liberado", ect
 **** add link back to the page
+*** TODO Link to the other page of the deputados (with links to prop. http://www.camara.gov.br/Internet/deputado/Dep_Detalhe.asp?id=520258 )
 ** Partidos
 *** include all in the table, but individual pages for the size>5
-
 * advertising
 ** email deputados federais
 Should wait for some of the (many) bugs to be ironed out.
-
-
-
+** Debora
 * Design
 ** check for font and font size in the tables
+** data download page
+* Server admin
+** Move large files to data.congressoaberto.com
+   Note: this is only useful if we notice many people downloading data. I doubt it. Let's for now host them in rackspace.
+** TODO check up if updates are working
+** TODO updateVot should move the downloaded files to another directory (instead of erasing them)
+* Funding 
+** OSI 
+*** OSI Latin America http://www.soros.org/initiatives/regions/latinamerica
+** Ford Foundation
+** Christian Aid
+** Fastenopfer
+** Fundação Avina
+** Instituto Heinrich Böl
+** INESC: http://www.inesc.org.br
+*** DONE Email Márcio Pontual
+** Fundação Avina
+** Other mentioned on inesc http://www.inesc.org.br/institucional/apoio-institucional
+** UN Democracy Fund (4th round not open yet) http://www.un.org/democracyfund/index.htm
+* Ideas
+** Herois: votaram contra PEC dos Vereadores; PEC dos Cartorios
+** @camilotelles: idéia. site que apresente os projetos de lei do ano. vc vota ele indica qual deputado vota mais próximo
+** paulo palito <palitojf@yahoo.com.br> Sugiro que este Blog reserve um espaço para um placar de votação de temas polêmicos, dos Deputados e Senadores de cada Estado, separadamente, para facilitar a visualização. 
+** sortear diferente os deputados a cada view.
+* Locais de votacao
+** http://noticias.terra.com.br/eleicoes2004/locaisdevotacao/index.html
+** http://www.tre-sp.gov.br/eleicoes/2004/local/default.htm
+* bugs
+** check the number of legislators in lstats. should be ~ 512
+
+http://berlininoctober.e-demokratie.org/index.php?title=Main_Page
+
+
+check voteid 3914
+/home/ca/reps/CongressoAberto/data/www.camara.gov.br/sileg/Prop_Detalhe.asp?id=269767
