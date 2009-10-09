@@ -62,7 +62,16 @@ pid1 <- wpAddByTitle(conwp,post_title=post_title,
 
 
 post_title <- 'Ideologia dos Partidos'
-post_content <- '<img src="/php/timthumb.php?src=/images/plio/fig-allparties2.png&w=400&zc=1" alt="Ideologia PartidÃ¡ria: 1989-2009" />'
+post_content <- descr::toUTF8("<table><tr>
+                 <td><p><img src='/php/timthumb.php?src=/images/plio/fig-allparties2.png&w=400&zc=1' alt='Ideologia PartidÃ¡ria: 1989-2009' /></p></td>
+                 <td><explain>
+                 A figura mostra a posição ideológica estimada de cada partido nas seis últimas legislaturas. A posição de cada partido em cada legislatura
+                 é ordenada de cima para baixo, o ponto representa a posição no eixo esquerda-direita e a linha a margem de erro. As setas, em vermelho,
+                 indicam a variação da posição dos partidos entre a primeira pesquisa (realizada em 1990), e a última (realizada em 2009). A maioria dos partidos
+                 moveu-se para o centro. 
+                 </explain></td>
+                 </tr>
+                 </table>",from = "WINDOWS-1252")
 pid2 <- wpAddByTitle(conwp,post_title=post_title,
                     post_content=post_content,
                      post_parent=pid,
