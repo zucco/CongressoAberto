@@ -1,4 +1,4 @@
-# Code generates the several "TOP TEN" scenarios
+﻿# Code generates the several "TOP TEN" scenarios
 # Cesar added contributions TOP TEN on October 08
 
 ##library(lme4)
@@ -59,14 +59,14 @@ lastseen <- recast(subset(res,rc!="Ausente"),bioid~variable,measure.var="rcdate"
 lastseen<- with(lastseen, data.frame(bioid, lastseen=as.Date(rcdate)))
 
 ##follow government
-tmp <- subset(res, rc.gov%in%c("Sim", "Não"))
+tmp <- subset(res, rc.gov%in%c("Sim", "NÃ£o"))
 tmp$cgov <- as.numeric(tmp$rc==tmp$rc.gov)
 cgov <- recast(tmp, bioid~variable, measure.var="cgov", id.var=c("bioid")
                , fun.aggregate=fsum)
 
 
 ##follow party
-tmp <- subset(res, rc.party%in%c("Sim", "Não"))
+tmp <- subset(res, rc.party%in%c("Sim", "NÃ£o"))
 ## only keep those members of the same party throughout the period
 ## FIX: take care of party renames
 nparty <- recast(tmp, bioid ~ variable, fun.aggregate=function(x) length(unique(x)), measure.var="party")
@@ -83,8 +83,8 @@ contrib<- dbGetQuery(connect, "select * from br_contrib")  #set of contributions
 elected<- dbGetQuery(connect, "select * from br_bioidtse")[,c("state","candidate_code","bioid")] #set of those eventually elected 
 inoffice<- dbGetQuery(connect, "select * from br_deputados_current")[,c("namelegisclean","bioid")] #set of those currenlty in office
 
-funding_total <- function(d) {sum(d$total,na.rm=TRUE)}
-funding_party <- function(d) {sum(subset(d,donortype=="PF")$total,na.rm=TRUE)}
+funding_total <- function(d) {sum(d$contribsum,na.rm=TRUE)}
+funding_party <- function(d) {sum(subset(d,donortype=="PF")$contribsum,na.rm=TRUE)}
 contrib.cand <- ddply(contrib, .(candno,partyno,state), "funding_total") #candidate observations (all contributions)
 contrib.candPP <- ddply(contrib, .(candno,partyno,state), "funding_party") #candidate observations (party contributions)
 contrib.cand <- merge(contrib.cand,contrib.candPP,by=c("candno","partyno","state")) #merge the two
@@ -157,7 +157,8 @@ capitalizados.3 <- getpics("funding_private")
 
 
 content <- function(statsnow) {
-    with(statsnow,{
+    statsnow$title <- gsub("^.*\\s(.*$)","\\1",statsnow$title,perl=TRUE)  #tirar o excelentïssimo senhor
+        with(statsnow,{
         art <- ifelse (sex=="Male", "o", "a")
         tshort <- ifelse (sex=="Male", "deputado", "deputada")
         paste(           
@@ -168,14 +169,17 @@ content <- function(statsnow) {
               ## nome, partido estado
               capwords(namelegis.1)," (",party, "/", toupper(state),")", sep='',
           ## ultimo dia em que compareceu.
-              ' compareceu a votações nominais  na Câmara pela última vez no dia ',
+              ' compareceu a votaÃ§Ãµes nominais  na CÃ¢mara pela Ãºltima vez no dia ',
               format.Date(lastseen, "%d/%m/%Y"),". ",          
               ## naturalidade
               "Natural de ", capwords(birthplace), ", ", capwords(namelegis.1), " tem ", diffyear(birthdate.1,Sys.Date()), " anos de idade."
               , " ",toupper(art), " ", tshort,  " vota ", round(cgov_prop*100), "%"
               , " das vezes com o governo, e ", round(cparty_prop*100), 
-              "% das vezes com seu partido. Em 2006, declarou ter recebido R$ ", round(funding_private/1000000),
-              " milh�es de doadores privados e ",round(funding_party/1000000)," milh�es de seu partido."
+              "% das vezes com seu partido. Em 2006, declarou ter recebido R$ ", 
+              ifelse(funding_private>1000000,round(funding_private/1000000),round(funding_private/1000)),
+              ifelse(funding_private>1000000," milhoes"," mil")," de doadores privados e ",
+              ifelse(funding_private>1000000,round(funding_party/1000000),round(funding_party/1000)),
+              ifelse(funding_party>1000000," milhoes"," mil")," de seu partido."
               , collapse="<br")
     })
 }
@@ -187,12 +191,12 @@ statsnow <- governistas[[1]]
 fn <- governistas[[2]]
 statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"cgov_prop"])
 ## change final comma to "e" 
-excerpt <- paste(paste(statsnow$npstate, collapse=", "), " são os dez deputados que mais seguiram a indicação do governo nas votações nominais na Câmara dos Deputados no  período de ", format(init.date,"%d/%m/%Y"), " a ", format(final.date,"%d/%m/%Y"),".", sep='')
+excerpt <- paste(paste(statsnow$npstate, collapse=", "), " sÃ£o os dez deputados que mais seguiram a indicaÃ§Ã£o do governo nas votaÃ§Ãµes nominais na CÃ¢mara dos Deputados no  perÃ­odo de ", format(init.date,"%d/%m/%Y"), " a ", format(final.date,"%d/%m/%Y"),".", sep='')
 ##FIX: insert date in the post?
 wpAddByTitle(conwp,post_title="Os Governistas"## %+%format(final.date,"%m/%Y")
              ,post_content=content(statsnow)
              ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("governismo",slug="governismo")),
-             ##post_excerpt='Saiba quem são os deputados federais que mais faltam às votações nominais.',
+             ##post_excerpt='Saiba quem sÃ£o os deputados federais que mais faltam Ã s votaÃ§Ãµes nominais.',
              post_type="post",
              custom_fields=data.frame(meta_key="Image",meta_value=fn))
 
@@ -201,12 +205,12 @@ statsnow <- partidarios[[1]]
 fn <- partidarios[[2]]
 statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"cparty_prop"])
 ## change final comma to "e" 
-excerpt <- paste(paste(statsnow$npstate, collapse=", "), " são os dez deputados que mais seguiram a indicação dos seus partidos  nas votações nominais na Câmara dos Deputados no  período de ", format(init.date,"%d/%m/%Y"), " a ", format(final.date,"%d/%m/%Y"),".", sep='')
+excerpt <- paste(paste(statsnow$npstate, collapse=", "), " sÃ£o os dez deputados que mais seguiram a indicaÃ§Ã£o dos seus partidos  nas votaÃ§Ãµes nominais na CÃ¢mara dos Deputados no  perÃ­odo de ", format(init.date,"%d/%m/%Y"), " a ", format(final.date,"%d/%m/%Y"),".", sep='')
 ##FIX: insert date in the post?
-wpAddByTitle(conwp,post_title="Os Fiéis"## %+%format(final.date,"%m/%Y")
+wpAddByTitle(conwp,post_title="Os FiÃ©is"## %+%format(final.date,"%m/%Y")
              ,post_content=content(statsnow)
              ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("partidos",slug="partidos")),
-             ##post_excerpt='Saiba quem são os deputados federais que mais faltam às votações nominais.',
+             ##post_excerpt='Saiba quem sÃ£o os deputados federais que mais faltam Ã s votaÃ§Ãµes nominais.',
              post_type="post",
              custom_fields=data.frame(meta_key="Image",meta_value=fn))
 
@@ -216,13 +220,13 @@ statsnow <- faltosos[[1]]
 fn <- faltosos[[2]]
 statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"ausente_prop"])
 ## change final comma to "e" 
-excerpt <- paste(paste(statsnow$npstate, collapse=", "), " são os dez deputados que mais faltaram às votações nominais na Câmara dos Deputados no  período de ", format(init.date,"%d/%m/%Y"), " a ", format(final.date,"%d/%m/%Y"),".", sep='')
+excerpt <- paste(paste(statsnow$npstate, collapse=", "), " sÃ£o os dez deputados que mais faltaram Ã s votaÃ§Ãµes nominais na CÃ¢mara dos Deputados no  perÃ­odo de ", format(init.date,"%d/%m/%Y"), " a ", format(final.date,"%d/%m/%Y"),".", sep='')
 ##FIX: insert date in the post?
 wpAddByTitle(conwp
              ,post_title="Os Ausentes"## %+%format(final.date,"%m/%Y")           
              ,post_content=content(statsnow)
              ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("absenteismo",slug="absenteismo")),
-             ##post_excerpt='Saiba quem são os deputados federais que mais faltam às votações nominais.',
+             ##post_excerpt='Saiba quem sÃ£o os deputados federais que mais faltam Ã s votaÃ§Ãµes nominais.',
              post_type="post",
              custom_fields=data.frame(meta_key="Image",meta_value=fn))
 
@@ -231,13 +235,13 @@ statsnow <- capitalizados[[1]]
 fn <- capitalizados[[2]]
 statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"funding_total"])
 ## change final comma to "e" 
-excerpt <- paste(paste(statsnow$npstate, collapse=", "), " são os dez deputados que mais receberam doações de campanha nas eleições de 2006 para a Câmara dos Deputados.", sep='')
+excerpt <- paste(paste(statsnow$npstate, collapse=", "), " sÃ£o os dez deputados que mais receberam doaÃ§Ãµes de campanha nas eleiÃ§Ãµes de 2006 para a CÃ¢mara dos Deputados.", sep='')
 ##FIX: insert date in the post?
 wpAddByTitle(conwp
              ,post_title="As Campanhas Mais Caras"## %+%format(final.date,"%m/%Y")           
              ,post_content=content(statsnow)
              ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("campanhas",slug="campanhas")),
-             ##post_excerpt='Saiba quem são os deputados federais em exercicio que mais receberam doações de campanha.',
+             ##post_excerpt='Saiba quem sÃ£o os deputados federais em exercicio que mais receberam doaÃ§Ãµes de campanha.',
              post_type="post",
              custom_fields=data.frame(meta_key="Image",meta_value=fn))
 
@@ -245,7 +249,19 @@ wpAddByTitle(conwp
 
 
 
-
+statsnow <- capitalizados[[1]]
+fn <- capitalizados[[2]]
+statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"funding_total"])
+## change final comma to "e" 
+excerpt <- paste(paste(statsnow$npstate, collapse=", "), " sÃ£o os dez deputados que mais receberam doaÃ§Ãµes de campanha nas eleiÃ§Ãµes de 2006 para a CÃ¢mara dos Deputados.", sep='')
+##FIX: insert date in the post?
+wpAddByTitle(conwp
+             ,post_title="Teste"## %+%format(final.date,"%m/%Y")           
+             ,post_content=content(statsnow)
+             ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("teste",slug="teste")),
+             ##post_excerpt='Saiba quem sÃ£o os deputados federais em exercicio que mais receberam doaÃ§Ãµes de campanha.',
+             post_type="post",
+             custom_fields=data.frame(meta_key="Image",meta_value=fn))
 
 
 
@@ -284,8 +300,8 @@ pe <- function(p,year=2008,label="") {
   p
 }
 p <- ggplot(data=tmp,aes(x=legisday,y=votes,group=Legislatura))
-p <- pe(p,year=2008,label="Eleições\nlocais")
-p <- pe(p,year=2010,label="Eleições\nnacionais")
+p <- pe(p,year=2008,label="EleiÃ§Ãµes\nlocais")
+p <- pe(p,year=2010,label="EleiÃ§Ãµes\nnacionais")
 p <- p+geom_point(aes(colour=Legislatura), size=0.7)
 ##p <- p+stat_smooth(se=FALSE,size=2)
 alphan <- .2
@@ -296,7 +312,7 @@ p <- p ## +scale_colour_manual(values = c(alpha("darkgreen",alphan),alpha("darkb
 fx <- function(x=1,year=2006) paste("Dez ",x+year,"\n(",x,'o. ano)',sep='')
 p <- p+scale_x_continuous(name="",breaks=as.numeric(getlegisdays(paste(2008:2010,"-02-01",sep=''))),labels=fx(1:3),expand=c(0,0))
 p <- p+coord_cartesian(ylim=c(0,1))
-p <- p+scale_y_continuous(name="Presença nas votações nominais", breaks=seq(0,1,.2), formatter="percent")
+p <- p+scale_y_continuous(name="PresenÃ§a nas votaÃ§Ãµes nominais", breaks=seq(0,1,.2), formatter="percent")
 p <- p+scale_colour_manual(values = c(alpha("darkgreen",alphan),alpha("darkblue",alphan), alpha("darkred",alphan),"red"))
 p <- p+theme_bw()
 
@@ -310,14 +326,14 @@ dev.off()
 convert.png(rf(fn))
 
 
-pt <- "Dados e Análises"
+pt <- "Dados e AnÃ¡lises"
 pp <- dbGetQuery(conwp,paste("select * from ", tname("posts"), " where post_title=", shQuote(pt)))$ID[1]
 
 
 
 content <- '<table>
 <tr>
-<td><img width=400 src="/php/timthumb.php?src=/images/camara/abstentions.png&w=400&h=0" alt="Presença em plenário" /></td>
+<td><img width=400 src="/php/timthumb.php?src=/images/camara/abstentions.png&w=400&h=0" alt="PresenÃ§a em plenÃ¡rio" /></td>
 <td>
 <explain> explain! </explain>
 </td>
@@ -326,13 +342,13 @@ content <- '<table>
 <td>
 <explain> explain! </explain>
 </td>
-<td><img width=400 src="/php/timthumb.php?src=/images/abstentions/byrc.png&w=400&h=0" alt="Presença em plenário" /></td>
+<td><img width=400 src="/php/timthumb.php?src=/images/abstentions/byrc.png&w=400&h=0" alt="PresenÃ§a em plenÃ¡rio" /></td>
 </tr>
 </table>
 '
 
 ## page under "desempenho"
-wpAddByTitle(conwp,post_title="Presença em plenário", post_category=data.frame(name="Headline",slug="headline"),
+wpAddByTitle(conwp,post_title="PresenÃ§a em plenÃ¡rio", post_category=data.frame(name="Headline",slug="headline"),
              post_content=content
              ,
              post_type="page",post_parent=pp,
