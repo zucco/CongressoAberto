@@ -1422,7 +1422,7 @@ lsos <- function(..., n=10) {
 states <- c("AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG", "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO")
 
 
-plots pdf and png maps of party's electoral strengh in each state
+#plots pdf and png maps of party's electoral strengh in each state
 map.elec <- function(the.data, filenow='',title='', large=TRUE, percent=FALSE) { 
   if (percent) {
     pct <- 100
@@ -1454,3 +1454,4 @@ map.elec <- function(the.data, filenow='',title='', large=TRUE, percent=FALSE) {
           dev.off()
         convert.png(file=paste(pty,"mapsmall.pdf",sep=""))
       }
+}
