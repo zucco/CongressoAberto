@@ -178,12 +178,12 @@ content <- function(statsnow) {1
               ## naturalidade
               "Natural de ", capwords(birthplace), ", ", capwords(namelegis.1), " tem ", diffyear(birthdate.1,Sys.Date()), " anos de idade."
               , " ",toupper(art), " ", tshort,  " vota ", round(cgov_prop*100), "%"
-              , " das vezes com o governo, ", round(cparty_prop*100), "% das vezes com seu partido e  esteve ausente em ", round(ausente_prop*100), "% das votaÃ§Ãµes."
-              , " Em 2006, declarou ter recebido R$ ", 
-              ifelse(funding_private>1000000,round(funding_private/1000000),round(funding_private/1000)),
-              ifelse(funding_private>1000000," milhoes"," mil")," de doadores privados e ",
-              ifelse(funding_private>1000000,round(funding_party/1000000),round(funding_party/1000)),
-              ifelse(funding_party>1000000," milhoes"," mil")," de seu partido."
+              , " das vezes com o governo, ", round(cparty_prop*100), "% das vezes com seu partido e  esteve ausente em ", round(ausente_prop*100), "% das votações."
+               , " Em 2006, declarou ter recebido R$ ", 
+               ifelse(funding_private>1000000,round(funding_private/1000000),round(funding_private/1000)),
+               ifelse(funding_private>1000000," milhões"," mil")," de doadores privados e ",
+               ifelse(funding_party>1000000,round(funding_party/1000000),round(funding_party/1000)),
+               ifelse(funding_party>1000000," milhões"," mil")," de seu partido."
               , collapse="<br")
     })
     paste("ObservaÃ§Ã£o: NÃ£o levamos em consideraÃ§Ã£o ausencias justificadas ou licensas mÃ©dicas.<br> ", res)
@@ -243,13 +243,12 @@ statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"funding_total"])
 ## change final comma to "e" 
 excerpt <- paste(paste(statsnow$npstate, collapse=", "), " sÃ£o os dez deputados que mais receberam doaÃ§Ãµes de campanha nas eleiÃ§Ãµes de 2006 para a CÃ¢mara dos Deputados.", sep='')
 ##FIX: insert date in the post?
- wpAddByTitle(conwp
-              ,post_title="As Campanhas Mais Caras"## %+%format(final.date,"%m/%Y")           
-              ,post_content=content(statsnow)
-              ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("campanhas",slug="campanhas")),
-              post_type="post",
-              custom_fields=data.frame(meta_key="Image",meta_value=fn))
-
+wpAddByTitle(conwp
+             ,post_title="As Campanhas Mais Caras"## %+%format(final.date,"%m/%Y")           
+             ,post_content=content(statsnow)
+             ,post_category=data.frame(name="Headline",slug="headline"), post_excerpt=excerpt,tags=data.frame(name=c("campanhas",slug="campanhas")),
+             post_type="post",
+             custom_fields=data.frame(meta_key="Image",meta_value=fn))
 
 
 
