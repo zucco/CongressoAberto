@@ -190,8 +190,6 @@ content <- function(statsnow) {1
 }
 
 
-
-
 statsnow <- governistas[[1]]
 fn <- governistas[[2]]
 statsnow$npstate <- reorder(statsnow$npstate, statsnow[,"cgov_prop"])
