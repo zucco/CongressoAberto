@@ -2,6 +2,7 @@
 # Cesar added contributions TOP TEN on October 08
 # Corrected the summation of campaign contributions on October 09
 # Improved the query for contributions, making it faster on Octoever 09
+# Leoni fixed bugs in assembling post, and Cesar added small changes on October 13
 
 ##library(lme4)
 library(ggplot2)
@@ -180,10 +181,12 @@ content <- function(statsnow) {1
               , " ",toupper(art), " ", tshort,  " vota ", round(cgov_prop*100), "%"
               , " das vezes com o governo, ", round(cparty_prop*100), "% das vezes com seu partido e  esteve ausente em ", round(ausente_prop*100), "% das votações."
                , " Em 2006, declarou ter recebido R$ ", 
-               ifelse(funding_private>1000000,round(funding_private/1000000),round(funding_private/1000)),
+               ifelse(funding_private>1000000,round(funding_private/1000000,1),round(funding_private/1000,1)),
                ifelse(funding_private>1000000," milhões"," mil")," de doadores privados e ",
-               ifelse(funding_party>1000000,round(funding_party/1000000),round(funding_party/1000)),
-               ifelse(funding_party>1000000," milhões"," mil")," de seu partido."
+               ifelse(funding_party==0,"nÃ£o ter recebido doaÃ§Ãµes",
+                 paste(ifelse(funding_party>1000000,round(funding_party/1000000,1),round(funding_party/1000,1)),
+                       ifelse(funding_party>1000000," milhões"," mil")))
+               ," de seu partido."
               , collapse="<br")
     })
     paste("ObservaÃ§Ã£o: NÃ£o levamos em consideraÃ§Ã£o ausencias justificadas ou licensas mÃ©dicas.<br> ", res)
