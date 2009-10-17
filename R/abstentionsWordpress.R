@@ -91,7 +91,7 @@ cparty <- merge(cparty,nparty)
 
 ##contributions
 ##Redo query: make a single query to avoid having to do all the mergers later.....
-contrib.cand <- dbGetQuery(connect, "select candno, state, SUM(contribsum) as funding_total from br_contrib GROUP BY candno, state")  
+contrib.cand <- dbGetQuery(connect, "select candno, state, SUM(contribsum) as funding_total, COUNT(contribsum) as funding_number from br_contrib GROUP BY candno, state")  
 contrib.candPP <- dbGetQuery(connect, "select candno, state, SUM(contribsum) as funding_party from br_contrib  WHERE donortype='PP' GROUP BY candno, state")  
 contrib.cand <- merge(contrib.cand,contrib.candPP,by=c("candno","state"),all=TRUE)
 contrib.cand$funding_party <- ifelse(is.na(contrib.cand$funding_party),0,contrib.cand$funding_party)
@@ -114,19 +114,20 @@ munnames <-dbGetQuery(connect,
 totvotemun <- merge(totvotemun,munnames,by.x=c("municipality"),by.y=c("municipalitytse"),all.x=TRUE)     #add municipality name to the set
           
 votecand.elec <- dbGetQuery(connect,    #total votes n all municipalities by each elected candiate
-                    paste("SELECT sum(a.votes) as votes, a.state, b.bioid  
+                    paste("SELECT sum(a.votes) as votes, b.bioid  
                            FROM br_vote_mun as a RIGHT JOIN br_bioidtse as b
                            ON (b.state=a.state and b.candidate_code = a.candidate_code)
                            WHERE a.office='DEPUTADO FEDERAL' GROUP BY b.bioid",sep=""))
 
-mun.maxabsvote <- function(d){ sprintf("%05.0f", d$municipality[which.max(d$votes)])}
-mun.maxrelvote <- function(d){ sprintf("%05.0f",d$municipality[which.max(d$voteshare)])}
-mun.maxabsvote <- ddply(votemun.elec, .(bioid), "mun.maxabsvote") #identify the municipality where each guy got the most votes
-mun.maxabsvote <-merge(mun.maxabsvote,munnames,by.x="mun.maxabsvote",by.y="municipalitytse",all.x=TRUE)
-mun.maxrelvote <- ddply(votemun.elec, .(bioid), "mun.maxrelvote") #identify the municipality where each guy got thighest vote share
-mun.maxrelvote <-merge(mun.maxrelvote,munnames,by.x="mun.maxrelvote",by.y="municipalitytse",all.x=TRUE) #merge in municipality names
+muncode.abs <- function(d){ sprintf("%05.0f", d$municipality[which.max(d$votes)])}
+muncode.rel <- function(d){ sprintf("%05.0f",d$municipality[which.max(d$voteshare)])}
+muncode.abs <- ddply(votemun.elec, .(bioid), "muncode.abs") #identify the municipality where each guy got the most votes
+muncode.abs <-merge(muncode.abs,munnames,by.x="muncode.abs",by.y="municipalitytse",all.x=TRUE)
+muncode.rel <- ddply(votemun.elec, .(bioid), "muncode.rel") #identify the municipality where each guy got thighest vote share
+muncode.rel <-merge(muncode.rel,munnames,by.x="muncode.rel",by.y="municipalitytse",all.x=TRUE) #merge in municipality names
 
-vote.stats <-merge( merge(votecand.elec,mun.maxabsvote,by="bioid",all.x=TRUE),mun.maxrelvote,by="bioid",all.x=TRUE,suffixes=c("abs","rel"))
+vote.stats <-merge( merge(votecand.elec,muncode.abs,by="bioid",all.x=TRUE),muncode.rel,by="bioid",all.x=TRUE,suffixes=c("abs","rel"))
+names(vote.stats) <- gsub("icipality_ibge07","name.",names(vote.stats))
 #get text names in here....
 
 
