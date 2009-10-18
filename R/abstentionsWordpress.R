@@ -165,12 +165,12 @@ stats$sex <- factor(stats$title,
                     levels=c("Exmo. Senhor Deputado", "Exma. Senhora Deputada"),
                     labels=c("Male", "Female"))
 
-getpics <- function(s) {
+getpics <- function(s,mais=TRUE) {
     statsnow <- stats
-    if(length(grep("funding",s))==1){  
-    statsnow <- statsnow[with(statsnow, order(statsnow[,s], decreasing=TRUE))[1:10], ]
+    if(length(grep("(funding)|(votes)",s,perl=TRUE))==1){  
+    statsnow <- statsnow[with(statsnow, order(statsnow[,s], decreasing=mais))[1:10], ]
     }else{
-    statsnow <- statsnow[with(statsnow, order(get(s%+%"_count"),get(s%+%"_prop"), decreasing=TRUE))[1:10], ]
+    statsnow <- statsnow[with(statsnow, order(get(s%+%"_count"),get(s%+%"_prop"), decreasing=mais))[1:10], ]
     }
     ## their pics
     statsnow.pics <- webdir(paste("images/bio/polaroid/foto",statsnow$bioid,".png", sep=""))
@@ -198,6 +198,14 @@ capitalizados <- getpics("funding_total")
 capitalizados.2 <- getpics("funding_party")
 
 capitalizados.3 <- getpics("funding_private")
+
+votados <- getpics("votes")
+
+pobres <- getpics("funding_total",mais=FALSE)
+
+caronas <- getpics("votes",mais=FALSE)
+
+assiduos <- getpics("ausente",mais=FALSE)
 
 toreal <- function(x,digits=0) gsub("\\.", ",", round(x,digits))
 content <- function(statsnow) {1
@@ -261,8 +269,6 @@ wpAddByTitle(conwp,post_title="Os FiÃ©is"## %+%format(final.date,"%m/%Y")
              post_type="post",
              post_date=wptime(Sys.Date())$brasilia,
              custom_fields=data.frame(meta_key="Image",meta_value=fn))
-
-
 
 statsnow <- faltosos[[1]]
 fn <- faltosos[[2]]
